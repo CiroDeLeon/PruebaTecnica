@@ -35,8 +35,15 @@ public class User implements Serializable{
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
 	Date last_login;
 	@Lob
-	@Column(length = 10000, name = "style")
+	@Column(length = 10000, name = "token")
 	String token;
+	Boolean isactive=true;
+	public Boolean getIsactive() {
+		return isactive;
+	}
+	public void setIsactive(Boolean isactive) {
+		this.isactive = isactive;
+	}
 	public Date getCreated() {
 		return created;
 	}
