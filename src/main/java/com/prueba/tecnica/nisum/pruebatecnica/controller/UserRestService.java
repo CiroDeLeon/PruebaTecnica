@@ -4,11 +4,12 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-
-
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.prueba.tecnica.nisum.pruebatecnica.entity.Phone;
 import com.prueba.tecnica.nisum.pruebatecnica.entity.User;
 import com.prueba.tecnica.nisum.pruebatecnica.exceptions.Mensaje;
+import com.prueba.tecnica.nisum.pruebatecnica.exceptions.NotFoundException;
+import com.prueba.tecnica.nisum.pruebatecnica.exceptions.ValidateException;
 import com.prueba.tecnica.nisum.pruebatecnica.repository.PhoneRepository;
 import com.prueba.tecnica.nisum.pruebatecnica.repository.UserRepository;
 import com.prueba.tecnica.nisum.pruebatecnica.validator.UserValidator;
@@ -43,7 +46,7 @@ public class UserRestService {
 	@PostMapping(value="User/Login",produces=MediaType.APPLICATION_JSON_VALUE,consumes=MediaType.APPLICATION_JSON_VALUE)   
 	public User Login(@RequestBody User user) throws Exception{
 		User u=userRepository.Login(user.getEmail(),user.getPassword());
-		if(u!=null && u.getId()==user.getId()) {
+		if(u!=null) {
 			Date currentDate=Calendar.getInstance().getTime();           	
 			u.setToken(getTokenValue(u));
 			u.setLast_login(currentDate);
@@ -55,7 +58,7 @@ public class UserRestService {
 	}
 	
 	@PostMapping(value="/User",produces=MediaType.APPLICATION_JSON_VALUE,consumes=MediaType.APPLICATION_JSON_VALUE)   
-	 public User createUser(@RequestBody User user) throws Exception{
+	 public User createUser(@RequestBody User user) throws ValidateException{
 	    if(idIsNull(user)) {
 	       if(allIdsAreNull(user.getPhones())) {	
               if(UserValidator.isValid(user)) {	   
@@ -66,20 +69,20 @@ public class UserRestService {
 	            	user.setLast_login(currentDate);
 		            return saveUser(user);
 	             }else {
-	        	    throw new Exception("Este email ya fue registrado en el sistema");
+	        	    throw new ValidateException("Este email ya fue registrado en el sistema");
 	             }
               }else {
-   	             throw new Exception(UserValidator.getValidationMessage(user));
+   	             throw new ValidateException(UserValidator.getValidationMessage(user));
               }
 	       }else {
-	    	   throw new Exception("Para crear usuarios el id de cada Phone debe ser null");
+	    	   throw new ValidateException("Para crear usuarios el id de cada Phone debe ser null");
 	       }
 	    }else{
-	       throw new Exception("Para crear usuarios el id del User debe ser null");
+	       throw new ValidateException("Para crear usuarios el id del User debe ser null");
 	    }
     }   
 	@PutMapping(value="/User",produces=MediaType.APPLICATION_JSON_VALUE,consumes=MediaType.APPLICATION_JSON_VALUE)   
-	 public User updateUser(@RequestBody User u) throws Exception{
+	 public User updateUser(@RequestBody User u) throws ValidateException,NotFoundException{
 		if(!idIsNull(u)) {  
 		      Long idUser=userRepository.findByIdUser(u.getId());
 		      List<Phone> userPhones=phoneRepository.getPhonesByIdUser(idUser);
@@ -99,20 +102,20 @@ public class UserRestService {
 				             u.setModified(currentDate);
 		    			     return saveUser(u);	    			  
 		    		      }else {
-		    			     throw new Exception("Este email ya fue registrado en el sistema por lo cual no puede asignarlo al usuario");
+		    			     throw new ValidateException("Este email ya fue registrado en el sistema por lo cual no puede asignarlo al usuario");
 		    		      }	  
 		    	       }
 		            }else {
-		    	       throw new Exception(UserValidator.getValidationMessage(u)); 
+		    	       throw new ValidateException(UserValidator.getValidationMessage(u)); 
 		            }
 		         }else{
-		    	    throw new Exception(existPhonesWithIdInvalidMessage(userPhones,u.getPhones()));
+		    	    throw new ValidateException(existPhonesWithIdInvalidMessage(userPhones,u.getPhones()));
 		         }
 		      }else {
-		    	  throw new Exception("El usuario con id "+u.getId()+" no existe en la base de datos por lo cual no puede ser modificado");
+		    	  throw new NotFoundException("El usuario con id "+u.getId()+" no existe en la base de datos por lo cual no puede ser modificado");
 		      }
 		}else {
-			throw new Exception("No es posible modificar el usuario debido a que el id es null ");
+			throw new ValidateException("No es posible modificar el usuario debido a que el id es null ");
 		}
   }   
    
@@ -205,44 +208,55 @@ public class UserRestService {
 	   return userRepository.findByEmail(u.getEmail())==null;
    }
    private String getTokenValue(User u) {
-	    String key="apiKey";
-	    long time=System.currentTimeMillis();
-	    String jwt=Jwts.builder()
-	    		   .signWith(SignatureAlgorithm.HS256,key)
-	    		   .setSubject(""+u.getName())
-	    		   .setIssuedAt(new java.util.Date(time))
-	    		   .setExpiration(new java.util.Date(time+900000))
-	    		   .claim(u.getEmail(),u.getPassword())
-	    		   .compact();
-	    return jwt;
+	    
+	    
+	    
+	    String secretKey = "mySecretKey";
+		List<GrantedAuthority> grantedAuthorities = AuthorityUtils
+				.commaSeparatedStringToAuthorityList("ROLE_USER");
+		
+		String token = Jwts
+				.builder()
+				.setId("softtekJWT")
+				.setSubject(u.getEmail())
+				.claim("authorities",
+						grantedAuthorities.stream()
+								.map(GrantedAuthority::getAuthority)
+								.collect(Collectors.toList()))
+				.setIssuedAt(new Date(System.currentTimeMillis()))
+				.setExpiration(new Date(System.currentTimeMillis() + 900000))
+				.signWith(SignatureAlgorithm.HS512,
+						secretKey.getBytes()).compact();
+
+		return "Bearer " + token;
    }
    
    @GetMapping(value="/User",produces=MediaType.APPLICATION_JSON_VALUE)   
-   public List<User> getUsers() throws Exception{
+   public List<User> getUsers() throws NotFoundException{
 	   List<User> lista=new ArrayList<User>();
 	   lista=userRepository.findAll();	   
 	   if(lista.size()>0) {
 	      return lista;
 	   }else {
-		   throw new Exception("No ha sido ingresado ningun usuario"); 
+		   throw new NotFoundException("No ha sido ingresado ningun usuario"); 
 	   }
    }
    @GetMapping(value="/User/{id}",produces=MediaType.APPLICATION_JSON_VALUE)   
-   public User getUser(@PathVariable Long id) throws Exception{
+   public User getUser(@PathVariable Long id) throws NotFoundException{
 	   try {
 	      User user=userRepository.findById(id).get();
 	      return user;
 	   }catch(Exception e) {
-		   throw new Exception("El usuario con id "+id+" no existe en la base de datos");
+		   throw new NotFoundException("El usuario con id "+id+" no existe en la base de datos");
 	   }	   
    }
    @DeleteMapping(value="/User")
-   public Mensaje mensajeInformativo() {
-	   return new Mensaje("Para eliminar debe anexar el idUser en la url endpoint/contextPath/User/{idUser}");
+   public void mensajeInformativo() throws ValidateException {
+	  throw new ValidateException("Para eliminar debe anexar el idUser en la url endpoint/contextPath/User/{idUser}");
    }
    
    @DeleteMapping(value="/User/{id}",produces=MediaType.APPLICATION_JSON_VALUE)
-   public Mensaje removeUser(@PathVariable Long id) throws Exception{	   
+   public Mensaje removeUser(@PathVariable Long id) throws NotFoundException{	   
 	   try {
 		  User user=userRepository.findById(id).get(); 
 		  Iterator<Phone> it=user.getPhones().iterator();
@@ -254,7 +268,7 @@ public class UserRestService {
 	      Mensaje m=new Mensaje("Usuario eliminado exitosamente id="+user.getId()+" email="+user.getEmail());
 	      return m;
 	   }catch(Exception e) {
-	      throw new Exception("El usuario con id "+id+" No Existe en nuestra base de datos por lo cual no es posible eliminarlo");
+	      throw new NotFoundException("El usuario con id "+id+" No Existe en nuestra base de datos por lo cual no es posible eliminarlo");
 	   }
    }
    
