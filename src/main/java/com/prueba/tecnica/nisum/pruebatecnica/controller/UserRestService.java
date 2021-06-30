@@ -59,7 +59,7 @@ public class UserRestService {
 	
 	@PostMapping(value="/User",produces=MediaType.APPLICATION_JSON_VALUE,consumes=MediaType.APPLICATION_JSON_VALUE)   
 	 public User createUser(@RequestBody User user) throws ValidateException{
-		if(user.getPhones()!=null) {
+		if(user.getPhones()!=null && user.getName()!=null && user.getEmail()!=null && user.getPassword()!=null) {
 	    if(idIsNull(user)) {
 	       if(allIdsAreNull(user.getPhones())) {	
               if(UserValidator.isValid(user)) {	   
@@ -82,11 +82,12 @@ public class UserRestService {
 	    	throw new ValidateException("Para crear usuarios el id del User debe ser null");
 	    }
 		}else {
-			throw new ValidateException("phones debe ser diferente de null ");
+			throw new ValidateException("name,email,password y phones deben ser diferente de null ");
 		}
     }   
 	@PutMapping(value="/User",produces=MediaType.APPLICATION_JSON_VALUE,consumes=MediaType.APPLICATION_JSON_VALUE)   
 	 public User updateUser(@RequestBody User u) throws ValidateException,NotFoundException{
+		if(u.getPhones()!=null && u.getName()!=null && u.getEmail()!=null && u.getPassword()!=null) {
 		if(!idIsNull(u)) {  
 		      Long idUser=userRepository.findByIdUser(u.getId());
 		      List<Phone> userPhones=phoneRepository.getPhonesByIdUser(idUser);
@@ -120,6 +121,9 @@ public class UserRestService {
 		      }
 		}else {
 			throw new ValidateException("No es posible modificar el usuario debido a que el id es null ");
+		}
+		}else {
+			throw new ValidateException("name,email,password y phones deben ser diferente de null ");
 		}
   }   
    
