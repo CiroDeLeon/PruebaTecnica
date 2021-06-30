@@ -59,6 +59,7 @@ public class UserRestService {
 	
 	@PostMapping(value="/User",produces=MediaType.APPLICATION_JSON_VALUE,consumes=MediaType.APPLICATION_JSON_VALUE)   
 	 public User createUser(@RequestBody User user) throws ValidateException{
+		if(user.getPhones()!=null) {
 	    if(idIsNull(user)) {
 	       if(allIdsAreNull(user.getPhones())) {	
               if(UserValidator.isValid(user)) {	   
@@ -78,8 +79,11 @@ public class UserRestService {
 	    	   throw new ValidateException("Para crear usuarios el id de cada Phone debe ser null");
 	       }
 	    }else{
-	       throw new ValidateException("Para crear usuarios el id del User debe ser null");
+	    	throw new ValidateException("Para crear usuarios el id del User debe ser null");
 	    }
+		}else {
+			throw new ValidateException("phones debe ser diferente de null ");
+		}
     }   
 	@PutMapping(value="/User",produces=MediaType.APPLICATION_JSON_VALUE,consumes=MediaType.APPLICATION_JSON_VALUE)   
 	 public User updateUser(@RequestBody User u) throws ValidateException,NotFoundException{

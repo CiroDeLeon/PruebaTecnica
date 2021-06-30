@@ -26,6 +26,7 @@ public class User implements Serializable{
 	String name;
 	String email;
 	String password;
+	@Column(nullable=false)
 	@OneToMany(mappedBy="user")
 	List<Phone> phones;	
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")

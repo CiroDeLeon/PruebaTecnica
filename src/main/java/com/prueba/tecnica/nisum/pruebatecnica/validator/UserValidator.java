@@ -40,6 +40,8 @@ public class UserValidator {
 		   mensaje+="El correo es invalido";
 		   return mensaje;
 	   }
+	   
+	   
 	   return "";
    }
    public static boolean isValid(User u) {
@@ -51,6 +53,8 @@ public class UserValidator {
 		   
 		   return false;
 	   }
+	   
+	   
 	   return true;
    }
    public static void main(String[] args) {

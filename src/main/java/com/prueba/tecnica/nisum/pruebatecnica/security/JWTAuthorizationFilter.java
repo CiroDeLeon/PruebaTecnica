@@ -1,4 +1,5 @@
 package com.prueba.tecnica.nisum.pruebatecnica.security;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,11 +58,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter{
 		return Jwts.parser().setSigningKey(SECRET.getBytes()).parseClaimsJws(jwtToken).getBody();
 	}
 
-	/**
-	 * Metodo para autenticarnos dentro del flujo de Spring
-	 * 
-	 * @param claims
-	 */
+	
 	private void setUpSpringAuthentication(Claims claims) {
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		List<String> authorities = (List) claims.get("authorities");
@@ -80,3 +77,4 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter{
 	}
 
 }
+

@@ -8,6 +8,7 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
+//import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -24,7 +25,8 @@ class PruebaTecnicaApplicationTests {
 	@Autowired
 	UserRestService service;
 	@Test
-	void contextLoads() {		
+	void contextLoads() {	
+	
 		User user=new User();		
 		user.setName("ciro");
 		user.setEmail("elalumnopc@hotmail.com");
@@ -47,6 +49,7 @@ class PruebaTecnicaApplicationTests {
 		user.setPhones(lista);
 		
 		User response=service.createUser(user);
+		System.out.println(response.getToken());
 		boolean succesTestFlag=response!=null;
 		Assert.assertTrue(succesTestFlag);
 		
